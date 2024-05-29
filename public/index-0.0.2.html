@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Viewer</title>
+    <style>
+        body {
+            font-family: monospace;
+            white-space: pre;
+            background-color: #333;
+            color: #ddd;
+            padding: 20px;
+        }
+        .log-line {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Log Viewer</h1>
+    <div id="logContainer"></div>
+    <script>
+        const logContainer = document.getElementById('logContainer');
+
+        const fetchLogs = async () => {
+            try {
+                const response = await fetch('/logs');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let { done, value } = await reader.read();
+
+                while (!done) {
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    lines.forEach(line => {
+                        if (line) {
+                            const logLine = document.createElement('div');
+                            logLine.className = 'log-line';
+                            logLine.textContent = line;
+                            logContainer.appendChild(logLine);
+                        }
+                    });
+
+                    ({ done, value } = await reader.read());
+                }
+            } catch (err) {
+                console.error('Failed to fetch logs:', err);
+            }
+        };
+
+        fetchLogs();
+    </script>
+</body>
+</html>
+

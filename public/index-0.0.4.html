@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Viewer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #2d2d2d;
+            color: #cccccc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 {
+            margin: 20px 0;
+            color: #f0db4f;
+        }
+        #logFrame {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 80%;
+            height: 70%;
+            overflow-y: scroll;
+            padding: 10px;
+        }
+        .log-line {
+            margin-bottom: 10px;
+        }
+        .log-error {
+            color: #ff4c4c;
+        }
+        .log-finished {
+            color: #4caf50;
+        }
+        .log-warning {
+            color: #ff9800;
+        }
+        .log-info {
+            color: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Log Viewer</h1>
+    <div id="logFrame">
+        <div id="logContainer"></div>
+    </div>
+    <script>
+        const logContainer = document.getElementById('logContainer');
+
+        const keywordStyles = [
+            { keyword: 'error', className: 'log-error' },
+            { keyword: 'finished', className: 'log-finished' },
+            { keyword: 'warning', className: 'log-warning' },
+            { keyword: 'info', className: 'log-info' }
+        ];
+
+        const highlightKeywords = (line) => {
+            let highlightedLine = line;
+            keywordStyles.forEach(({ keyword, className }) => {
+                const regex = new RegExp(`(${keyword})`, 'gi');
+                highlightedLine = highlightedLine.replace(regex, `<span class="${className}">$1</span>`);
+            });
+            return highlightedLine;
+        };
+
+        const fetchLogs = async () => {
+            try {
+                const response = await fetch('/logs');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let { done, value } = await reader.read();
+
+                while (!done) {
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    lines.forEach(line => {
+                        if (line) {
+                            const logLine = document.createElement('div');
+                            logLine.className = 'log-line';
+                            logLine.innerHTML = highlightKeywords(line);
+                            logContainer.appendChild(logLine);
+                            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+                        }
+                    });
+
+                    ({ done, value } = await reader.read());
+                }
+            } catch (err) {
+                console.error('Failed to fetch logs:', err);
+            }
+        };
+
+        fetchLogs();
+    </script>
+</body>
+</html>
+
